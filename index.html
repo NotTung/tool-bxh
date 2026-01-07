@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<title>Generate Leaderboard Rows</title>
+<meta name="robots" content="noindex" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+body { background: #111; color: #fff; font-family: Arial; padding: 20px; }
+textarea { width: 100%; height: 350px; margin-top: 20px; }
+button { padding: 8px 16px; }
+</style>
+</head>
+
+<body>
+
+<h2>🛠 Tạo HTML bảng leaderboard từ Excel</h2>
+
+<input type="file" id="excelInput" accept=".xlsx" />
+<button onclick="generate()">Tạo HTML</button>
+
+<h3>Kết quả HTML (copy phần này dán vào bảng của bạn):</h3>
+<textarea id="output"></textarea>
+<script>
+    function maskMiddle(str) {
+        if (!str) return "";
+        str = str.toString().trim();
+    
+        // quá ngắn thì không mask nhiều
+        if (str.length <= 2) return str[0] + "*";
+    
+        const first = str.slice(0, 2);
+        const last = str.slice(-1);
+        return first + "***" + last;
+    }
+    
+    function generate() {
+        const file = document.getElementById("excelInput").files[0];
+        if (!file) {
+            alert("Hãy chọn file Excel trước");
+            return;
+        }
+    
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const workbook = XLSX.read(e.target.result, { type: "array" });
+    
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
+    
+            let html = "";
+    
+            for (let i = 1; i < rows.length; i++) {
+                let r = rows[i];
+                if (!r || r.length === 0) continue;
+    
+                let rank = r[0] || "";
+                let uid = maskMiddle(r[1] || "");
+                let nickname = maskMiddle(r[2] || "");
+                let ref = r[3] || "";
+                let volume = r[4] || 0;
+    
+                html += `
+    <tr class="lb-row ${rank == 1 ? "lb-row-top1" : ""}">
+        <td class="col-rank">${rank}</td>
+        <td class="col-nickname">${nickname}</td>
+        <td class="col-uid">${uid}</td>
+        <td class="col-ref">${ref}</td>
+        <td class="col-volume">${Number(volume).toLocaleString()} USDT</td>
+    </tr>`;
+            }
+    
+            document.getElementById("output").value = html.trim();
+        };
+    
+        reader.readAsArrayBuffer(file);
+    }
+    </script>
+    
+
+</body>
+</html>
